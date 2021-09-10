@@ -36,7 +36,7 @@ Further references:
 cd /home/username/
 mkdir chimps
 cd chimps
-cp /home/instructur_materials/Arun_Sethuraman/* .
+cp /home/instructor_materials/Arun_Sethuraman/* .
 ```
 
 2. Compute heterozygosity across the entire file
@@ -154,6 +154,7 @@ bonferroni<-which(allchroms_hwe$bonferroni < 0.05)
 holm<-which(allchroms_hwe$holm < 0.05)
 bh<-which(allchroms_hwe$bh < 0.05)
 fdr<-which(allchroms_hwe$fdr < 0.05)
+x<-data.frame(allchroms_hwe$CHR[bonferroni],allchroms_hwe$POS[bonferroni])
 write.table(x,"exclude.txt",row.names=FALSE,quote=FALSE,col.names=FALSE)
 
 #Some examples
@@ -238,7 +239,7 @@ This should create a new filtered VCF file called "out.recode.vcf" in your folde
 library(OutFLANK)
 library(vcfR) #should already be installed
 #Read the chimps.vcf file, convert it into OutFLANK format
-chimps<-read.vcfR("chimps.vcf")
+chimps<-read.vcfR("out.recode.vcf")
 geno <- extract.gt(chimps) # Character matrix containing the genotypes
 position <- getPOS(chimps) # Positions in bp
 chromosome <- getCHROM(chimps) # Chromosome information
