@@ -15,7 +15,7 @@ Twitter: @arunsethuraman
 3. Input files - accessible on the Box page under Lecture Materials > Arun Sethuraman > Hands-on Files
 
 # Exercise 0 - Reviewing tests of HWE, LD, Differentiation
-We will be using the data from Bataillon et al. 2015 (Bataillon, T., Duan, J., Hvilsom, C., Jin, X., Li, Y., Skov, L., Glemin, S., Munch, K., Jiang, T., Qian, Y. and Hobolth, A., 2015. Inference of purifying and positive selection in three subspecies of chimpanzees (Pan troglodytes) from exome sequencing. Genome biology and evolution, 7(4), pp.1122-1132.) for this exercise. You can download the VCF file here: http://datadryad.org/resource/doi:10.5061/dryad.56m2g or the SNP file is available as "SNP_v37_version3.vcf" in the Hands-on Files folder.
+We will be using the data from Bataillon et al. 2015 (Bataillon, T., Duan, J., Hvilsom, C., Jin, X., Li, Y., Skov, L., Glemin, S., Munch, K., Jiang, T., Qian, Y. and Hobolth, A., 2015. Inference of purifying and positive selection in three subspecies of chimpanzees (Pan troglodytes) from exome sequencing. Genome biology and evolution, 7(4), pp.1122-1132.) for this exercise. You can download the VCF file here: http://datadryad.org/resource/doi:10.5061/dryad.56m2g or the SNP file is available as "chimps.vcf" in the Hands-on Files folder.
 
 Back story - this study analyzes whole exome data from three subspecies of chimpanzees - Pan troglodytes troglodytes (Central), P.t.verus (Western), and P.t.schweinfurthii (Eastern) which have very distinctive geographical ranges separated by large river systems in Africa, and have not been observed to hybridize in the wild with each other, or with Pan paniscus (Bonobos, but genomic evidence states otherwise!). Nonetheless, chimpanzee numbers are dwindling in the wild, with estimates of effective population sizes between 22,000 - 27,000 (Fischer et al., 2004, Sethuraman and Hey 2016, Won and Hey 2005).
 
@@ -27,49 +27,57 @@ Further references:
 3. Kuhlwilm, M., Han, S., Sousa, V.C., Excoffier, L. and Marques-Bonet, T., 2019. Ancient admixture from an extinct ape lineage into bonobos. Nature ecology & evolution, 3(6), pp.957-965.
 4. Fischer, A., Wiebe, V., Pääbo, S. and Przeworski, M., 2004. Evidence for a complex demographic history of chimpanzees. Molecular biology and evolution, 21(5), pp.799-808.
 
+# Hands-on
 
-1. Create a new directory, and place the SNP VCF file in this folder.
+0. Login to the congen server (handson.congen1.com)
+
+1. Create a new directory within your user directory, and place the SNP VCF file in this folder.
 ```shell
+cd /home/username/
 mkdir chimps
 cd chimps
-mv ../SNP_v37_version3.vcf .
+cp /home/instructur_materials/Arun_Sethuraman/* .
 ```
 
 2. Compute heterozygosity across the entire file
 ```shell
-vcftools --vcf SNP_v37_version3.vcf --het --out allchroms_het
-R #this will open R
+vcftools --vcf chimps.vcf --het --out allchroms_het
+R #this will open R - or alternately just switch to your Rstudio window on the congen server
 ```
 
 3. Visualize this in R, to observe some basic statistics about the individual chimps.What all statistics were obtained? You’ll notice that the O.HOM. column contains the number of observed homozygote sites, and the E.HOM. contains the number of expected homozygote sites (under HWE), N.SITES is the total number of loci that were analyzed. The first column (INDV) contains the names of all individuals, while the last column, F contains the inbreeding coefficient. 
 What do you observe? Who is most inbred? Who is least inbred?
 
  ```R
+ #In your Rstudio console, click on Session > Set Working Directory > To Files Pane Location (or your chimps directory)
  allchroms_het<-read.table("allchroms_het.het",header=TRUE)
  allchroms_het
  summary(allchroms_het)
- plot(allchroms_het[,5])
- q()
+ plot(allchroms_het[,5],xlab="Individuals",ylab="Genome-wide Heterozygosity")
+ #q()
  ```
  4. Testing for Hardy-Weinberg Equilibrium, computing Diversities, Tajima's D across chromosomes in 10k windows, visualization
  ```Shell
- vcftools --vcf SNP_v37_version3.vcf --hardy --out allchroms_hwe
- vcftools --vcf SNP_v37_version3.vcf --TajimaD 10000 --out allchroms_tajimad
- vcftools --vcf SNP_v37_version3.vcf --window-pi 10000 --window-pi-step 10000 --out allchromspi_10kwindow
+ #Switch to your Terminal window to run these other commands
+ vcftools --vcf chimps.vcf --hardy --out allchroms_hwe
+ vcftools --vcf chimps.vcf --TajimaD 10000 --out allchroms_tajimad
+ vcftools --vcf chimps.vcf --window-pi 10000 --window-pi-step 10000 --out allchromspi_10kwindow
 ```
 
 ```R
+#Switch to the Rstudio console
 allchroms_hwe<-read.table("allchroms_hwe.hwe",header=TRUE)
 tajimad<-read.table("allchroms_tajimad.Tajima.D",header=TRUE)
 tajimad_nomissing<-na.omit(tajimad)
-hist(tajimad_nomissing$TajimaD)
+hist(tajimad_nomissing$TajimaD,main="Tajima's D distribution",xlab="Tajima's D",ylab="Frequency")
 #Alternately, if we plot it by chromosome
+#Plot of Tajima's D
+plot(tajimad_nomissing$CHROM,tajimad_nomissing$TajimaD,xlab="Chromosome",ylab="Tajima's D")
 
-#Plot of log p-values for sites in HWE
+
+#Box Plot of log p-values for sites in HWE
 boxplot(log(P_HWE,10)~CHR,data=allchroms_hwe,xlab="Chromosome",ylab="log10 P-value")
 
-#Plot of Tajima's D
-plot(tajimad_nomissing$CHROM,tajimaD_nomissing$TajimaD,xlab="Chromosome",ylab="Tajima's D")
 
 ```
 These should produce rather ugly plots like the ones below:
@@ -82,12 +90,15 @@ These should produce rather ugly plots like the ones below:
 So let's make these prettier, and visualize as a Manhattan Plot instead - this requires the qqman package in R. Note that qqman and its dependencies (e.g. calibrate) are available for R.3.5.0 and above - so please note that the Manhattan plots will only work with these versions and above).
 
 ```R
-install.packages("qqman")
+#install.packages("qqman")
 library(qqman)
-manhattan(allchroms_hwe,chr="CHR",bp="POS",p="P_HWE",snp="POS",logp=TRUE,ylab="log p-values",ylim=c(-3.0,3.0))
-manhattan(tajimad_nomissing,chr="CHROM",bp="BIN_START",p="TajimaD",snp="N_SNPS",logp=FALSE,ylab="Tajima’s D",ylim=c(-3.0,3.0))
+manhattan(allchroms_hwe,chr="CHR",bp="POS",p="P_HWE",snp="POS",logp=TRUE,ylab="log p-values",ylim=c(0,10.0))
+manhattan(tajimad_nomissing,chr="CHROM",bp="BIN_START",p="TajimaD",snp="N_SNPS",logp=TRUE,ylab="Tajima’s D",ylim=c(-1.0,3.0))
 ```
-![image](https://user-images.githubusercontent.com/5439390/132736520-2acb3475-bd12-474c-8474-94862eaf6776.png)[tajimad_hist.pdf]
+
+<img width="623" alt="Screen Shot 2021-09-10 at 9 50 48 AM" src="https://user-images.githubusercontent.com/5439390/132889354-18ae49e8-9147-42d6-b1bb-71b455280587.png">
+
+<img width="623" alt="Screen Shot 2021-09-10 at 9 54 41 AM" src="https://user-images.githubusercontent.com/5439390/132889802-4ea4e6c0-3fb1-49f5-9e41-4f1d243a8e2e.png">
 
 
 Voila! Much prettier(?) What do you notice about these?
@@ -102,21 +113,26 @@ manhattan(diversity,chr="CHROM",bp="BIN_START",p="PI",snp="N_VARIANTS",logp=FALS
 
 ![image](https://user-images.githubusercontent.com/5439390/132736812-51634ad5-f8c6-4f91-8bca-ab811d3aa5a1.png)
 
-Now let's try and compute some differentiation statistics based on these data. THe three files that are provided (schweinfurthii.txt, troglodytes.txt, and verus.txt) contain the names of each of the individuals from each separate population. Make sure that these files are present in the same folder (chimps) prior to running these commands.
+Now compare the Tajima's D and Diversity plots. Do you notice anything "cool"?
+
+Now let's try and compute some differentiation statistics based on these data. The three files that are provided (schweinfurthii.txt, troglodytes.txt, and verus.txt) contain the names of each of the individuals from each separate population. Make sure that these files are present in the same folder (chimps) prior to running these commands.
 
 ```Shell
+#Move to your terminal window
 vcftools --vcf chimps.vcf --weir-fst-pop schweinfurthii.txt --weir-fst-pop troglodytes.txt --weir-fst-pop verus.txt --out allthreepopsfst
-R
+#Move onto Rstudio console
 ```
 
 Thereon, let's plot and analyze these in R:
 
 ```R
 fst<-read.table("allthreepopsfst.weir.fst",header=TRUE)
-manhattan(fst,chr="CHROM",bp="POS",p="WEIR_AND_COCKERHAM_FST",snp="POS",logp=FALSE,ylab="Fst")
+manhattan(fst,chr="CHROM",bp="POS",p="WEIR_AND_COCKERHAM_FST",snp="POS",logp=FALSE,ylab="Fst",ylim=c(0.0,1.1))
 ```
 
 <img width="668" alt="Screen Shot 2021-09-09 at 2 37 14 PM" src="https://user-images.githubusercontent.com/5439390/132765979-97833f8e-d75d-4dbf-a565-74bc00cd4f65.png">
+
+Now compare this Manhattan plot against the Tajima's D and Diversity plots. Do you notice any patterns?
 
 However, the problem with vcftools is that it doesn't compute p-values for estimates of Tajima's D, diversity, or Fst. So there are other packages that might be used for the same purpose - e.g. hierfstat, ARLEQUIN
 
@@ -127,6 +143,7 @@ However, the problem with vcftools is that it doesn't compute p-values for estim
 Turns out, base R has some very useful functions to do this - we will just add new columns to our HWE results, to compare them against each other.
 
 ```R
+#In Rstudio console
 allchroms_hwe$bonferroni=p.adjust(allchroms_hwe$P_HWE,"bonferroni")
 allchroms_hwe$holm=p.adjust(allchroms_hwe$P_HWE,"holm")
 allchroms_hwe$bh=p.adjust(allchroms_hwe$P_HWE,"BH")
@@ -165,10 +182,10 @@ Now redo this analysis with some other Tajima’s D outliers. What genes do you 
 
 2. In Unix shell, you can "explore" this data by using head/less, or other commands - for instance, here you'll notice that the file contains count information for each genotype - the first column contains the name of the SNP, while the rest of the columns contain genotype counts of A/A, A/B, B/B respectively, where A and B are the two alleles at each locus. For our purpose, we will use the "HardyWeinberg" package in R to test, correct, and obtain "outliers".
 
-3. Now in R:
+3. Now in your Rstudio console:
 
 ```R
-install.packages("HardyWeinberg")
+#install.packages("HardyWeinberg")
 library(HardyWeinberg)
 x<-read.table("Exercise2.txt")
 #note that this is of dimension 5933 x 4 - you can find this by doing dim(x)
@@ -206,9 +223,19 @@ Why or why don't we recapitulate the results from Wei and Nielsen? Can you think
 
 This tutorial has been adapted from the OutFLANK vignette that can be accessed here: https://htmlpreview.github.io/?https://github.com/whitlock/OutFLANK/blob/master/inst/doc/OutFLANKAnalysis.html
 
+First things first, we need to filter our dataset (chimps.vcf) for excessive degrees of missingness, and deviations from HWE prior to running OutFLANK analyses. So to do this, go to your Terminal.
+
+```Shell
+vcftools --vcf chimps.vcf --hwe 0.05 --max-missing 0.25 --recode
+```
+
+This should create a new filtered VCF file called "out.recode.vcf" in your folder. What do you notice about the number of SNP's in this new file?
+
 ```R
+#To install OutFLANK: 
+# devtools::install_github("whitlock/OutFLANK")
 library(OutFLANK)
-library(vcfR)
+library(vcfR) #should already be installed
 #Read the chimps.vcf file, convert it into OutFLANK format
 chimps<-read.vcfR("chimps.vcf")
 geno <- extract.gt(chimps) # Character matrix containing the genotypes
@@ -229,43 +256,37 @@ table(as.vector(G))
 # Now G should be in OutFLANK format
 # Calculate Fst - note I'm only doing this for 1000 loci
 
-my_fst<-MakeDiploidFSTMat(t(G[1:1000,]), locusNames = position[1:1000], popNames = pop)
+my_fst<-MakeDiploidFSTMat(t(G), locusNames = position, popNames = pop)
 # You can view this
-head(fst)
+head(my_fst)
 
 #Now run OutFLANK
-out_trim<-OutFLANK(fst,NumberOfSamples=31,qthreshold=0.05,Hmin=0.1)
+out_trim<-OutFLANK(my_fst,NumberOfSamples=3,qthreshold=0.05,Hmin=0.1)
 head(out_trim$results)
 
 #There are several pruning steps, sanity checks that I am skipping here for time - please refer to the original vignette for more details!
 
 #OutFLANK automates p-value correction for multiple testing using the FDR method, and threshold - please see Whitlock and Lotterhos 2015
-P1 <- pOutlierFinderChiSqNoCorr(my_fst, Fstbar = out_trim$FSTNoCorrbar, dfInferred = out_trim$dfInferred, qthreshold = 0.05, Hmin=0.1)
+P1 <- pOutlierFinderChiSqNoCorr(my_fst, Fstbar = out_trim$FSTNoCorrbar, dfInferred = out_trim$dfInferred, qthreshold = 0.1, Hmin=0.1)
 head(P1)
 summary(P1$pvalues)
+```
+
+Now let's go ahead and plot these:
+
+```R
+my_out <- P1$OutlierFlag==TRUE
+plot(P1$He, P1$FST, pch=19, col=rgb(0,0,0,0.1))
+points(P1$He[my_out], P1$FST[my_out], col="blue")
+plot(P1$LocusName[P1$He>0.1], P1$FST[P1$He>0.1],
+     xlab="Position", ylab="FST", col=rgb(0,0,0,0.2))
+  points(P1$LocusName[my_out], P1$FST[my_out], col="magenta", pch=20) 
+
 ```
 
 Thought Exercise:
 
 
 What do you determine? Do you find any outlier loci? If you were interpreting these plainly based on p-values, would you identify outliers?
-What if you had done the same analyses, but with a different q threshold?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+What if you had done the same analyses, but with a different q threshold? If you were only using the Tajima's D/Fst/Diversity outliers, how would your inference change?
 
