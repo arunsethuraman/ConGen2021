@@ -154,6 +154,7 @@ bonferroni<-which(allchroms_hwe$bonferroni < 0.05)
 holm<-which(allchroms_hwe$holm < 0.05)
 bh<-which(allchroms_hwe$bh < 0.05)
 fdr<-which(allchroms_hwe$fdr < 0.05)
+write.table(x,"exclude.txt",row.names=FALSE,quote=FALSE,col.names=FALSE)
 
 #Some examples
 head(allchroms_hwe[holm,])
@@ -226,7 +227,7 @@ This tutorial has been adapted from the OutFLANK vignette that can be accessed h
 First things first, we need to filter our dataset (chimps.vcf) for excessive degrees of missingness, and deviations from HWE prior to running OutFLANK analyses. So to do this, go to your Terminal.
 
 ```Shell
-vcftools --vcf chimps.vcf --hwe 0.05 --max-missing 0.25 --recode
+vcftools --vcf chimps.vcf --hwe 0.05 --max-missing 0.25 --exclude exclude.txt --recode
 ```
 
 This should create a new filtered VCF file called "out.recode.vcf" in your folder. What do you notice about the number of SNP's in this new file?
@@ -254,7 +255,7 @@ G[is.na(G)]<-9 #important! Missing data calls need to be coded as 9 in OutFLANK
 table(as.vector(G))
 
 # Now G should be in OutFLANK format
-# Calculate Fst - note I'm only doing this for 1000 loci
+# Calculate Fst 
 
 my_fst<-MakeDiploidFSTMat(t(G), locusNames = position, popNames = pop)
 # You can view this
